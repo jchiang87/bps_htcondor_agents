@@ -1,7 +1,6 @@
 from collections import defaultdict, namedtuple
 import pandas as pd
 from lsst.ctrl.bps.htcondor.lssthtc import read_node_status
-from .condor_search import condor_search
 
 
 __all__ = ("find_workflows", "extract_jobs_status")
@@ -12,6 +11,7 @@ WorkflowParams = namedtuple("WorkflowParams",
 
 
 def find_workflows(user, hist):
+    from bps_htcondor_agents.condor_search import condor_search
     constraint = f'Owner=="{user}" && JobUniverse==7'
     projection = ["bps_run", "Iwd", "ClusterId", "JobBatchId"]
     results = {}
@@ -34,8 +34,9 @@ def extract_jobs_status(submit_dir):
     jobs = read_node_status(submit_dir)
     data = defaultdict(list)
     for job_id, info in jobs.items():
+        bps_job_label = info['bps_job_label']
         data['job_id'].append(job_id)
-        data['node'].append(info['Node'])
+        data['node'].append(info.get('Node', bps_job_label))
         data['node_status'].append(info['NodeStatus'])
         if 'ToE' in info:
             data['ExitCode'].append(info['ToE']['ExitCode'])
@@ -49,5 +50,7 @@ def extract_jobs_status(submit_dir):
         else:
             worker_node = None
         data['worker_node'].append(worker_node)
-        data['bps_job_label'].append(info['bps_job_label'])
-    return pd.DataFrame(data), jobs
+        data['bps_job_label'].append(bps_job_label)
+    df0 = pd.DataFrame(data)
+    df0.submit_dir = submit_dir
+    return  df0, jobs

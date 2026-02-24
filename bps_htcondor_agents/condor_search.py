@@ -47,8 +47,12 @@ class MultiprocCondorSearch:
             processes = len(schedds)
 
         if processes == 1:
-            return condor_search(constraint=constraint, hist=hist,
-                                 schedds=schedds)
+            kwds = {"constraint": constraint,
+                    "hist": hist,
+                    "schedds": schedds}
+            if projection is not None:
+                kwds["projection"] = projection
+            return _condor_search(**kwds)
 
         run_info = {}
         with multiprocessing.Pool(processes=processes) as pool:
