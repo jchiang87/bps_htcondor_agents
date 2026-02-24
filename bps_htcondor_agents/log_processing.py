@@ -1,11 +1,16 @@
 import os
 import glob
 from itertools import pairwise
+from langchain_community.document_loaders import TextLoader
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents.base import Document
+from langchain_huggingface import HuggingFaceEmbeddings
 from smolagents import tool, Tool
 
 
 __all__ = (
     "LogFileFinder",
+    "LogRetriever",
     "load_log_summary",
 )
 
@@ -59,6 +64,51 @@ class LogFileFinder(Tool):
             assert len(log_file) == 1
             log_files.append(log_file[0])
         return log_files
+
+
+class LogRetriever(Tool):
+    name = "log_retriever"
+    description = "Searches through log files to find error patterns or events."
+    inputs = {
+        "query": {
+            "type": "string",
+            "description": "Error string to search for.",
+        }
+    }
+    output_type = "string"
+
+    def __init__(self, file_list, **kwargs):
+        super().__init__(**kwargs)
+        # Load the logs
+        documents = []
+        for file_path in file_list:
+            documents.extend(TextLoader(file_path).load())
+
+        # Split into stanzas delimited by pipetask logging tags.
+        self.docs = []
+        for doc in documents:
+            indexes = []
+            lines = doc.page_content.split("\n")
+            for i, line in enumerate(lines):
+                if line[:4] in ("WARN", "INFO", "ERRO", "VERB"):
+                    indexes.append(i)
+            indexes.append(len(lines))
+            for i, j in pairwise(indexes):
+                self.docs.append(
+                    Document(
+                        metadata=doc.metadata,
+                        page_content="\n".join(lines[i:j])
+                    )
+                )
+
+        # Create the local vector store in RAM
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        self.vector_store = FAISS.from_documents(self.docs, embeddings)
+
+    def forward(self, query: str) -> str:
+        # Search the top 3 most relevant log snippets
+        results = self.vector_store.similarity_search(query, k=3)
+        return "\n---\n".join([res.page_content for res in results])
 
 
 @tool
