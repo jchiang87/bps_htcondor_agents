@@ -15,6 +15,21 @@ __all__ = (
 )
 
 
+def get_log_folder_map(submit_dir):
+    """Map the log subfolders for each job from parsing the *.dag files.
+    """
+    folder_map = {}
+    dag_files = sorted(glob.glob(os.path.join(submit_dir, "*.dag")))
+    for dag_file in dag_files:
+        with open(dag_file) as fobj:
+            lines = fobj.readlines()
+        for line in lines:
+            if line.startswith("JOB"):
+                tokens = line.split()
+                folder_map[tokens[1]] = tokens[-1].strip('"')
+    return folder_map
+
+
 class LogFileFinder(Tool):
     name = "find_log_files"
     description = "Finds log files for queried jobs in a run."
@@ -39,25 +54,25 @@ class LogFileFinder(Tool):
         else:
             from bps_htcondor_agents import extract_jobs_status
             self.df0, _ = extract_jobs_status(submit_dir)
+        self.log_folder_map = get_log_folder_map(submit_dir)
 
-    def forward(self, query: str, limit: int = 10) -> list[str]:
-        """Find the job log files given the provided query constraint.  Limit
-        to the first 10 files, by default.
+    def forward(self, query: str, limit: int = None) -> list[str]:
+        """Find the job log files given the provided query constraint.
 
         Args:
             query: A query string for selecting the log files for the
                 desired jobs, e.g., "ExitCode==1" to find the failed jobs.
             limit: The number of log files to return.
         """
-        df = self.df0.query(query).head(limit)
+        df = self.df0.query(query)
+        if limit is not None:
+            df = df.head(limit)
 
         log_files = []
         for _, row in df.iterrows():
-            job_label = row.bps_job_label
             job_name = row.node
-            folders = job_name.split(job_label)[-1].lstrip('_').split('_')
-            folders.insert(0, job_label)
-            log_dir = os.path.join(self.submit_dir, 'jobs', *folders)
+            log_folder = self.log_folder_map[job_name]
+            log_dir = os.path.join(self.submit_dir, log_folder)
             assert os.path.isdir(log_dir)
             log_file = glob.glob(os.path.join(
                 log_dir, f'*{int(float(row.job_id))}*.out'))

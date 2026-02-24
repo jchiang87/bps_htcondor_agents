@@ -36,7 +36,8 @@ def extract_jobs_status(submit_dir):
     for job_id, info in jobs.items():
         bps_job_label = info['bps_job_label']
         data['job_id'].append(job_id)
-        data['node'].append(info.get('Node', bps_job_label))
+        job_node = info.get('Node', bps_job_label)
+        data['node'].append(job_node)
         data['node_status'].append(info['NodeStatus'])
         if 'ToE' in info:
             data['ExitCode'].append(info['ToE']['ExitCode'])
@@ -53,4 +54,4 @@ def extract_jobs_status(submit_dir):
         data['bps_job_label'].append(bps_job_label)
     df0 = pd.DataFrame(data)
     df0.submit_dir = submit_dir
-    return  df0, jobs
+    return df0, jobs
