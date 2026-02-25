@@ -56,7 +56,7 @@ class LogFileFinder(Tool):
             self.df0, _ = extract_jobs_status(submit_dir)
         self.log_folder_map = get_log_folder_map(submit_dir)
 
-    def forward(self, query: str, limit: int = None) -> list[str]:
+    def forward(self, query: str, limit: int = 10) -> list[str]:
         """Find the job log files given the provided query constraint.
 
         Args:
@@ -122,7 +122,7 @@ class LogRetriever(Tool):
 
     def forward(self, query: str) -> str:
         # Search the top 3 most relevant log snippets
-        results = self.vector_store.similarity_search(query, k=3)
+        results = self.vector_store.similarity_search(query, k=10)
         return "\n---\n".join([res.page_content for res in results])
 
 
