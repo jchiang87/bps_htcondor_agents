@@ -4,3 +4,4 @@ except:
     pass
 from .workflows import *
 from .log_processing import *
+from .opensearch_utils import *
