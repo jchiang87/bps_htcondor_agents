@@ -40,8 +40,8 @@ def extract_jobs_status(submit_dir):
         data['node'].append(job_node)
         data['node_status'].append(info['NodeStatus'])
         if 'ToE' in info:
-            data['ExitCode'].append(info['ToE']['ExitCode'])
-            data['ExitBySignal'].append(info['ToE']['ExitBySignal'])
+            data['ExitCode'].append(info['ToE'].get('ExitCode', -1))
+            data['ExitBySignal'].append(info['ToE'].get('ExitBySignal', None))
         else:
             data['ExitCode'].append(-1)
             data['ExitBySignal'].append(None)

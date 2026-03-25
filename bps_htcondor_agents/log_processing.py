@@ -9,6 +9,8 @@ from smolagents import tool, Tool
 
 
 __all__ = (
+    "create_log_file_finder",
+    "create_log_retriever",
     "LogFileFinder",
     "LogRetriever",
     "load_log_summary",
@@ -83,7 +85,8 @@ class LogFileFinder(Tool):
 
 class LogRetriever(Tool):
     name = "log_retriever"
-    description = "Searches through log files to find error patterns or events."
+    description = ("Searches through log files to find error "
+                   "patterns or events.")
     inputs = {
         "query": {
             "type": "string",
@@ -124,6 +127,31 @@ class LogRetriever(Tool):
         # Search the top 3 most relevant log snippets
         results = self.vector_store.similarity_search(query, k=10)
         return "\n---\n".join([res.page_content for res in results])
+
+
+@tool
+def create_log_file_finder(submit_dir: str) -> Tool:
+    """
+    Creates an instance of LogFileFinder configured with the workflow
+    submit_dir.
+
+    Args:
+        submit_dir: The submission directory containing the files
+        associated with the run to be considered.
+    """
+    return LogFileFinder(submit_dir)
+
+
+@tool
+def create_log_retriever(file_list: list) -> Tool:
+    """
+    Creates an instance of LogRetriever, configured with a list
+    of log files.
+
+    Args:
+        file_list:  A list of log files.
+    """
+    return LogRetriever(file_list)
 
 
 @tool
