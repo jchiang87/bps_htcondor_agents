@@ -28,7 +28,7 @@ analysis_agent = CodeAgent(
     additional_authorized_imports=["os", "glob", "pandas"],
     name="log_analyst",
     description="Analyzes log files provided by a log retriever tool.",
-    instructions=("Use the log retriever tool to process the information "
+    instructions=("Use the log retriever tool to query for errors "
                   "in the logs in the provided file list."),
 )
 

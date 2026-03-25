@@ -85,7 +85,7 @@ class LogFileFinder(Tool):
 
 class LogRetriever(Tool):
     name = "log_retriever"
-    description = ("Searches through log files to find error "
+    description = ("Searches through log files to find query "
                    "patterns or events.")
     inputs = {
         "query": {
@@ -124,6 +124,12 @@ class LogRetriever(Tool):
         self.vector_store = FAISS.from_documents(self.docs, embeddings)
 
     def forward(self, query: str) -> str:
+        """
+        Find log file entries give the provide query constraint
+
+        Args:
+            query: The query string find related log entries.
+        """
         # Search the top 3 most relevant log snippets
         results = self.vector_store.similarity_search(query, k=10)
         return "\n---\n".join([res.page_content for res in results])
